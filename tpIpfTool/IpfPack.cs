@@ -32,7 +32,11 @@ namespace tpIpfTool {
 						lstFileTab.Add(fti);
 					}
 				}
-				return 0;
+				if (lstFileTab.Count <1) {
+					Print("構成対象のファイルが存在しません");
+					return -1;
+				}
+				return Packing();
 			} catch (Exception ex) {
 				Print("例外発生!!");
 				Print(ex.ToString());
@@ -53,6 +57,10 @@ namespace tpIpfTool {
 						//Print(fti.archNm + " | " +fti.fileNm);
 						lstFileTab.Add(fti);
 					}
+				}
+				if (lstFileTab.Count <1) {
+					Print("構成対象のファイルが存在しません");
+					return -1;
 				}
 				return Packing();
 			} catch (Exception ex) {
