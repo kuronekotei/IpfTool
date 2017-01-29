@@ -1,0 +1,11 @@
+﻿<Window x:Class="tpIpfTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="476" Width="424" AllowDrop="True" FontFamily="MS Gothic" PreviewDragOver="Window_PreviewDragOver" Drop="Window_Drop">
+	<Grid>
+		<ScrollViewer Margin="0">
+			<TextBox x:Name="txtOutput"  Margin="0" TextWrapping="Wrap" Text="{Binding logtxt}" IsReadOnly="True" />
+		</ScrollViewer>
+
+	</Grid>
+</Window>
