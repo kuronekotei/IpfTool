@@ -105,7 +105,7 @@ namespace tpIpfTool {
 			if (modePac && modePacIpf) {
 				Task task = new Task(() => {
 					IpfPack ip = new IpfPack(Print);
-					int ret = ip.PacIpf(files);
+					int ret = ip.PacIpf(files, mdl.tgtver, mdl.pkgver);
 					if (modeArgs && (ret>-1)) {
 						Environment.Exit(0);
 					}
@@ -116,7 +116,7 @@ namespace tpIpfTool {
 			if (modePac && modePacAddon) {
 				Task task = new Task(() => {
 					IpfPack ip = new IpfPack(Print);
-					int ret = ip.PacAddon(files);
+					int ret = ip.PacAddon(files, mdl.tgtver, mdl.pkgver);
 					if (modeArgs && (ret>-1)) {
 						Environment.Exit(0);
 					}
@@ -133,15 +133,39 @@ namespace tpIpfTool {
 		class MainWindowModel : INotifyPropertyChanged {
 			public event PropertyChangedEventHandler PropertyChanged;
 			private static readonly PropertyChangedEventArgs LogtxtPropertyChangedEventArgs = new PropertyChangedEventArgs("logtxt");
+			private static readonly PropertyChangedEventArgs TgtVerPropertyChangedEventArgs = new PropertyChangedEventArgs("tgtver");
+			private static readonly PropertyChangedEventArgs PkgVerPropertyChangedEventArgs = new PropertyChangedEventArgs("pkgver");
 			string _logtxt;
 			public string logtxt {
 				get { return _logtxt; }
 				set {
 					if (_logtxt == value) { return; }
 					_logtxt = value;
-					 if (PropertyChanged != null){
-						 PropertyChanged.Invoke(this, LogtxtPropertyChangedEventArgs);
-					 }
+					if (PropertyChanged != null) {
+						PropertyChanged.Invoke(this, LogtxtPropertyChangedEventArgs);
+					}
+				}
+			}
+			uint _tgtver;
+			public uint tgtver {
+				get { return _tgtver; }
+				set {
+					if (_tgtver == value) { return; }
+					_tgtver = value;
+					if (PropertyChanged != null) {
+						PropertyChanged.Invoke(this, TgtVerPropertyChangedEventArgs);
+					}
+				}
+			}
+			uint _pkgver;
+			public uint pkgver {
+				get { return _pkgver; }
+				set {
+					if (_pkgver == value) { return; }
+					_pkgver = value;
+					if (PropertyChanged != null) {
+						PropertyChanged.Invoke(this, TgtVerPropertyChangedEventArgs);
+					}
 				}
 			}
 		}

@@ -17,8 +17,10 @@ namespace tpIpfTool {
 		}
 
 
-		public int PacIpf(string[] files) {
+		public int PacIpf(string[] files, uint tgtver, uint pkgver) {
 			try {
+				ipfTgtVer = tgtver;
+				ipfPkgVer = pkgver;
 				lstFileTab.Clear();
 				foreach (var x in files) {
 					string dPath = Path.GetFullPath(x+"\\");
@@ -43,8 +45,10 @@ namespace tpIpfTool {
 			}
 			return -9999;
 		}
-		public int PacAddon(string[] files) {
+		public int PacAddon(string[] files, uint tgtver, uint pkgver) {
 			try {
+				ipfTgtVer = tgtver;
+				ipfPkgVer = pkgver;
 				lstFileTab.Clear();
 				foreach (var x in files) {
 					string dPath = Path.GetDirectoryName(x)+"\\";
@@ -139,6 +143,8 @@ namespace tpIpfTool {
 					tmpBuf[2] = (byte)(ipfFileTblPos); tmpBuf[3] = (byte)(ipfFileTblPos>>8); tmpBuf[4] = (byte)(ipfFileTblPos>>16); tmpBuf[5] = (byte)(ipfFileTblPos>>24);
 					tmpBuf[8] = (byte)(ipfFileFtrPos); tmpBuf[9] = (byte)(ipfFileFtrPos>>8); tmpBuf[10] = (byte)(ipfFileFtrPos>>16); tmpBuf[11] = (byte)(ipfFileFtrPos>>24);
 					tmpBuf[12] = 0x50; tmpBuf[13] = 0x4B; tmpBuf[14] = 0x05; tmpBuf[15] = 0x06;
+					tmpBuf[16] = (byte)(ipfTgtVer); tmpBuf[17] = (byte)(ipfTgtVer>>8); tmpBuf[18] = (byte)(ipfTgtVer>>16); tmpBuf[19] = (byte)(ipfTgtVer>>24);
+					tmpBuf[20] = (byte)(ipfPkgVer); tmpBuf[21] = (byte)(ipfPkgVer>>8); tmpBuf[22] = (byte)(ipfPkgVer>>16); tmpBuf[23] = (byte)(ipfPkgVer>>24);
 					fw.Write(tmpBuf, 0, tmpBuf.Length);
 				}
 			}
@@ -248,8 +254,11 @@ namespace tpIpfTool {
 			ipfFileCnt		= tmpBuf[0] + (tmpBuf[1]*0x100);
 			ipfFileTblPos	= tmpBuf[2] + (tmpBuf[3]*0x100) + (tmpBuf[ 4]*0x10000) + (tmpBuf[ 5]*0x1000000);
 			ipfFileFtrPos	= tmpBuf[8] + (tmpBuf[9]*0x100) + (tmpBuf[10]*0x10000) + (tmpBuf[11]*0x1000000);
+			ipfTgtVer		= tmpBuf[16] + (tmpBuf[17]*0x100U) + (tmpBuf[18]*0x10000U) + (tmpBuf[19]*0x1000000U);
+			ipfPkgVer		= tmpBuf[20] + (tmpBuf[21]*0x100U) + (tmpBuf[22]*0x10000U) + (tmpBuf[23]*0x1000000U);
 
 			Print("  ファイル数:"+ipfFileCnt+" [0x"+ipfFileCnt.ToString("X4")+"]");
+			Print("  TargetVer:["+ipfTgtVer+"]  PackageVer:["+ipfPkgVer+"]");
 			if (ipfFileTblPos>ipfLen-24 || ipfFileTblPos<0) {
 				Print("IPFフッタ不正　IPF内テーブル始");
 				return -4;
@@ -262,7 +271,7 @@ namespace tpIpfTool {
 			int tmpPos = ipfFileTblPos;
 			for (int i =0; i<ipfFileCnt; i++) {
 				//Print("IPFテーブル解析 "+(i+1));
-				if (tmpPos+20>ipfFileFtrPos || tmpPos<0) {
+				if (tmpPos<0) {
 					Print("IPFテーブル不正　開始位置");
 					return -6;
 				}
@@ -276,10 +285,6 @@ namespace tpIpfTool {
 				fti.compLen		= tmpBuf[ 6] + (tmpBuf[ 7]*0x100) + (tmpBuf[ 8]*0x10000) + (tmpBuf[ 9]*0x1000000);
 				fti.deplLen		= tmpBuf[10] + (tmpBuf[11]*0x100) + (tmpBuf[12]*0x10000) + (tmpBuf[13]*0x1000000);
 				fti.dataPos		= tmpBuf[14] + (tmpBuf[15]*0x100) + (tmpBuf[16]*0x10000) + (tmpBuf[17]*0x1000000);
-				if (tmpPos+20+fileNmLen+archNmLen>ipfFileFtrPos) {
-					Print("IPFテーブル不正　領域サイズ");
-					return -7;
-				}
 				tmpBuf = new byte[archNmLen];
 				ReadFile(fs, tmpBuf, tmpPos+20, archNmLen);
 				fti.archNm = Encoding.UTF8.GetString(tmpBuf);
@@ -288,10 +293,6 @@ namespace tpIpfTool {
 				fti.fileNm = Encoding.UTF8.GetString(tmpBuf);
 				//Print("  ファイル名:"+fti.archNm+" | "+fti.fileNm+"  ファイル位置:"+fti.dataPos+" [0x"+fti.dataPos.ToString("X8")+"]  圧縮サイズ　:"+fti.compLen+" [0x"+fti.compLen.ToString("X8")+"]");
 				//Print("  CRC:"+fti.fileCrc.ToString("X8"));
-				if (fti.dataPos+fti.compLen>ipfFileFtrPos) {
-					Print("IPFテーブル不正　ファイル領域");
-					return -7;
-				}
 
 				lstFileTab.Add(fti);
 				tmpPos += 20+fileNmLen+archNmLen;
@@ -346,6 +347,8 @@ namespace tpIpfTool {
 		int ipfFileCnt;
 		int ipfFileTblPos;
 		int ipfFileFtrPos;
+		uint ipfTgtVer;
+		uint ipfPkgVer;
 
 	}
 }
