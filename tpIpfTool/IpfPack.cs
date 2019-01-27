@@ -16,12 +16,14 @@ namespace tpIpfTool {
 			Print = dlg;
 		}
 
+        string ipfTgtName = null;
 
-		public int PacIpf(string[] files, uint tgtver, uint pkgver) {
+		public int PacIpf(string[] files, uint tgtver, uint pkgver ,string tgtName) {
 			try {
 				ipfTgtVer = tgtver;
 				ipfPkgVer = pkgver;
-				lstFileTab.Clear();
+                ipfTgtName = tgtName;
+                lstFileTab.Clear();
 				foreach (var x in files) {
 					string dPath = Path.GetFullPath(x+"\\");
 					var dFiles = Directory.EnumerateFiles(dPath, "*", SearchOption.AllDirectories);
@@ -45,19 +47,20 @@ namespace tpIpfTool {
 			}
 			return -9999;
 		}
-		public int PacAddon(string[] files, uint tgtver, uint pkgver) {
+		public int PacAddon(string[] files, uint tgtver, uint pkgver,string tgtName) {
 			try {
 				ipfTgtVer = tgtver;
 				ipfPkgVer = pkgver;
+                ipfTgtName = tgtName;
 				lstFileTab.Clear();
 				foreach (var x in files) {
 					string dPath = Path.GetDirectoryName(x)+"\\";
 					var dFiles = Directory.EnumerateFiles(x, "*", SearchOption.AllDirectories);
-					foreach (var fPath in dFiles) {
+                    foreach (var fPath in dFiles) {
 						var fti=new FileTableInf();
 						fti.filePath = fPath;
-						fti.archNm = "addon_d.ipf";
-						fti.fileNm = fPath.Remove(0, dPath.Length).Replace("\\","/");
+                        fti.archNm = "addon_d.ipf";
+						fti.fileNm = fPath.Remove(0, dPath.Length == 1 ? 0 : dPath.Length).Replace("\\","/");
 						//Print(fti.archNm + " | " +fti.fileNm);
 						lstFileTab.Add(fti);
 					}
@@ -77,7 +80,8 @@ namespace tpIpfTool {
 
 		public int Packing() {
 			Print("ファイル構成開始");
-			using (FileStream fw = new FileStream(Directory.GetCurrentDirectory()+"/"+"_p"+DateTime.Now.ToString("yyMMddhhmmss")+".ipf", FileMode.CreateNew, FileAccess.ReadWrite)) {
+            string fileName = string.IsNullOrEmpty(ipfTgtName) ? "_p" + DateTime.Now.ToString("yyMMddhhmmss") : ipfTgtName;
+            using (FileStream fw = new FileStream(Directory.GetCurrentDirectory()+"/"+fileName+".ipf", FileMode.Create, FileAccess.ReadWrite)) {
 				foreach (var fti in lstFileTab) {
 					using (FileStream fr = new FileStream(fti.filePath, FileMode.Open, FileAccess.Read)) {
 						IpfCrypt ic = new IpfCrypt();
