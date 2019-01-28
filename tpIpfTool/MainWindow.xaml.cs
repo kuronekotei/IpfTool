@@ -185,14 +185,13 @@ namespace tpIpfTool {
 					if (_pkgver == value) { return; }
 					_pkgver = value;
 					if (PropertyChanged != null) {
-						PropertyChanged.Invoke(this, TgtVerPropertyChangedEventArgs);
+						PropertyChanged.Invoke(this, PkgVerPropertyChangedEventArgs);
 					}
 				}
 			}
 		}
 
 		MainWindowModel mdl = new MainWindowModel();
-
 		private void Print(string txt) {
 			mdl.logtxt += txt +"\n";
 		}

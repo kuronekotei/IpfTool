@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace tpIpfTool {
 	class IpfPack {
-		
+
 		public delegate void DlgPrint(string s);
 		DlgPrint Print;
 
@@ -16,14 +16,22 @@ namespace tpIpfTool {
 			Print = dlg;
 		}
 
-        string ipfTgtName = null;
+		void ExPrint(string t, StreamWriter sw) {
+			Print(t);
+			if (sw!=null) {
+				sw.WriteLine(t);
+				sw.Flush();
+			}
+		}
 
-		public int PacIpf(string[] files, uint tgtver, uint pkgver ,string tgtName) {
+		string ipfTgtName = null;
+
+		public int PacIpf(string[] files, uint tgtver, uint pkgver, string tgtName) {
 			try {
 				ipfTgtVer = tgtver;
 				ipfPkgVer = pkgver;
-                ipfTgtName = tgtName;
-                lstFileTab.Clear();
+				ipfTgtName = tgtName;
+				lstFileTab.Clear();
 				foreach (var x in files) {
 					string dPath = Path.GetFullPath(x+"\\");
 					var dFiles = Directory.EnumerateFiles(dPath, "*", SearchOption.AllDirectories);
@@ -47,20 +55,21 @@ namespace tpIpfTool {
 			}
 			return -9999;
 		}
-		public int PacAddon(string[] files, uint tgtver, uint pkgver,string tgtName) {
+
+		public int PacAddon(string[] files, uint tgtver, uint pkgver, string tgtName) {
 			try {
 				ipfTgtVer = tgtver;
 				ipfPkgVer = pkgver;
-                ipfTgtName = tgtName;
+				ipfTgtName = tgtName;
 				lstFileTab.Clear();
 				foreach (var x in files) {
 					string dPath = Path.GetDirectoryName(x)+"\\";
 					var dFiles = Directory.EnumerateFiles(x, "*", SearchOption.AllDirectories);
-                    foreach (var fPath in dFiles) {
+					foreach (var fPath in dFiles) {
 						var fti=new FileTableInf();
 						fti.filePath = fPath;
-                        fti.archNm = "addon_d.ipf";
-						fti.fileNm = fPath.Remove(0, dPath.Length == 1 ? 0 : dPath.Length).Replace("\\","/");
+						fti.archNm = "addon_d.ipf";
+						fti.fileNm = fPath.Remove(0, dPath.Length == 1 ? 0 : dPath.Length).Replace("\\", "/");
 						//Print(fti.archNm + " | " +fti.fileNm);
 						lstFileTab.Add(fti);
 					}
@@ -80,8 +89,8 @@ namespace tpIpfTool {
 
 		public int Packing() {
 			Print("ファイル構成開始");
-            string fileName = string.IsNullOrEmpty(ipfTgtName) ? "_p" + DateTime.Now.ToString("yyMMddhhmmss") : ipfTgtName;
-            using (FileStream fw = new FileStream(Directory.GetCurrentDirectory()+"/"+fileName+".ipf", FileMode.Create, FileAccess.ReadWrite)) {
+			string fileName = string.IsNullOrEmpty(ipfTgtName) ? "_p" + DateTime.Now.ToString("yyMMddhhmmss") : ipfTgtName;
+			using (FileStream fw = new FileStream(Directory.GetCurrentDirectory()+"/"+fileName+".ipf", FileMode.Create, FileAccess.ReadWrite)) {
 				foreach (var fti in lstFileTab) {
 					using (FileStream fr = new FileStream(fti.filePath, FileMode.Open, FileAccess.Read)) {
 						IpfCrypt ic = new IpfCrypt();
@@ -158,21 +167,25 @@ namespace tpIpfTool {
 		}
 
 		public int ExtIpf(string[] files) {
+			StreamWriter sw = null;
 			try {
 				foreach (var filePath in files) {
 					lstFileTab.Clear();
-					Print("ファイル展開開始");
-					Print("File:"+filePath);
+					ExPrint("ファイル展開開始", sw);
+					ExPrint("File:"+filePath, sw);
+					string tgtDir = Directory.GetCurrentDirectory()+"/"+Path.GetFileName(filePath)+"_e"+DateTime.Now.ToString("yyMMddhhmmss");
+					Directory.CreateDirectory(tgtDir);
+					//sw = new StreamWriter(Path.Combine(tgtDir, "log.txt"), true);
 					int sucCnt = 0;
 					int errCnt = 0;
 					using (FileStream fr = new FileStream(filePath, FileMode.Open, FileAccess.Read)) {
-						if (CheckIpf(fr)<0) {
+						if (CheckIpf(fr, sw)<0) {
 							Print("ファイル展開失敗");
+							sw.WriteLine("ファイル展開失敗");
 							Print("----");
+							sw.WriteLine("----");
 							continue;
 						}
-						string tgtDir = Directory.GetCurrentDirectory()+"/"+Path.GetFileName(filePath)+"_e"+DateTime.Now.ToString("yyMMddhhmmss");
-						Directory.CreateDirectory(tgtDir);
 
 						foreach (var fti in lstFileTab) {
 							if (Ext1File(fr, fti, tgtDir) < 0) {
@@ -182,25 +195,33 @@ namespace tpIpfTool {
 							}
 						}
 					}
-					Print("ファイル展開完了");
+					ExPrint("ファイル展開完了", sw);
 					//Print("　成功："+sucCnt);
 					//Print("　失敗："+errCnt);
-					Print("----");
+					ExPrint("----", sw);
 
 					//foreach (var s in nonCompExtnt) {
 					//	Print("非圧縮:"+s);
 					//}
-
+					if (sw!=null) {
+						sw.Close();
+						sw = null;
+					}
 				}
 				return 0;
 			} catch (Exception ex) {
 				Print("例外発生!!");
 				Print(ex.ToString());
+			} finally {
+				if (sw!=null) {
+					sw.Close();
+					sw = null;
+				}
 			}
 			return -9999;
 		}
 
-		private int Ext1File(FileStream fs, FileTableInf fti,string tgtDir) {
+		private int Ext1File(FileStream fs, FileTableInf fti, string tgtDir) {
 			//Print("生成:"+fti.archNm+"/"+System.IO.Path.GetDirectoryName(fti.fileNm));
 			if (!Directory.Exists(tgtDir+"/"+fti.archNm+"/"+Path.GetDirectoryName(fti.fileNm))) {
 				Directory.CreateDirectory(tgtDir+"/"+fti.archNm+"/"+Path.GetDirectoryName(fti.fileNm));
@@ -236,39 +257,39 @@ namespace tpIpfTool {
 			return 0;
 		}
 
-		private int CheckIpf(FileStream fs) {
+		private int CheckIpf(FileStream fs, StreamWriter sw) {
 			if (fs.Length<44) {
-				Print("IPFサイズ不足　(最低44バイト)");
+				ExPrint("IPFサイズ不足　(最低44バイト)", sw);
 				return -1;
 			}
 			if (fs.Length>Int32.MaxValue) {
-				Print("IPFサイズ超過　(最大"+Int32.MaxValue+"バイト)");
+				ExPrint("IPFサイズ超過　(最大"+Int32.MaxValue+"バイト)", sw);
 				return -2;
 			}
 			ipfLen = (int)fs.Length; // ファイルのサイズ
 
-			Print("IPFフッタ解析");
+			ExPrint("IPFフッタ解析", sw);
 
 			byte[] tmpBuf = new byte[24];
 			ReadFile(fs, tmpBuf, ipfLen-24, 24);
 			if ((tmpBuf[12]!=0x50)||(tmpBuf[13]!=0x4B)||(tmpBuf[14]!=0x05)||(tmpBuf[15]!=0x06)) {
-				Print("IPFフッタ不正");
+				ExPrint("IPFフッタ不正", sw);
 				return -3;
 			}
 			ipfFileCnt		= tmpBuf[0] + (tmpBuf[1]*0x100);
-			ipfFileTblPos	= tmpBuf[2] + (tmpBuf[3]*0x100) + (tmpBuf[ 4]*0x10000) + (tmpBuf[ 5]*0x1000000);
+			ipfFileTblPos	= tmpBuf[2] + (tmpBuf[3]*0x100) + (tmpBuf[4]*0x10000) + (tmpBuf[5]*0x1000000);
 			ipfFileFtrPos	= tmpBuf[8] + (tmpBuf[9]*0x100) + (tmpBuf[10]*0x10000) + (tmpBuf[11]*0x1000000);
 			ipfTgtVer		= tmpBuf[16] + (tmpBuf[17]*0x100U) + (tmpBuf[18]*0x10000U) + (tmpBuf[19]*0x1000000U);
 			ipfPkgVer		= tmpBuf[20] + (tmpBuf[21]*0x100U) + (tmpBuf[22]*0x10000U) + (tmpBuf[23]*0x1000000U);
 
-			Print("  ファイル数:"+ipfFileCnt+" [0x"+ipfFileCnt.ToString("X4")+"]");
-			Print("  TargetVer:["+ipfTgtVer+"]  PackageVer:["+ipfPkgVer+"]");
+			ExPrint("  ファイル数:"+ipfFileCnt+" [0x"+ipfFileCnt.ToString("X4")+"]", sw);
+			ExPrint("  TargetVer:["+ipfTgtVer+"]  PackageVer:["+ipfPkgVer+"]", sw);
 			if (ipfFileTblPos>ipfLen-24 || ipfFileTblPos<0) {
-				Print("IPFフッタ不正　IPF内テーブル始");
+				ExPrint("IPFフッタ不正　IPF内テーブル始", sw);
 				return -4;
 			}
 			if (ipfFileFtrPos>ipfLen-24 || ipfFileFtrPos<0) {
-				Print("IPFフッタ不正　IPF内フッタ位置");
+				ExPrint("IPFフッタ不正　IPF内フッタ位置", sw);
 				return -5;
 			}
 
@@ -276,7 +297,7 @@ namespace tpIpfTool {
 			for (int i =0; i<ipfFileCnt; i++) {
 				//Print("IPFテーブル解析 "+(i+1));
 				if (tmpPos<0) {
-					Print("IPFテーブル不正　開始位置");
+					ExPrint("IPFテーブル不正　開始位置", sw);
 					return -6;
 				}
 				FileTableInf fti = new FileTableInf();
@@ -284,9 +305,9 @@ namespace tpIpfTool {
 				tmpBuf = new byte[24];
 				ReadFile(fs, tmpBuf, tmpPos, 20);
 				int archNmLen	= tmpBuf[18] + (tmpBuf[19]*0x100);
-				int fileNmLen	= tmpBuf[ 0] + (tmpBuf[ 1]*0x100);
+				int fileNmLen	= tmpBuf[0] + (tmpBuf[1]*0x100);
 				fti.fileCrc		= (uint)(tmpBuf[2] + (tmpBuf[3]*0x100) + (tmpBuf[4]*0x10000)) + ((uint)tmpBuf[5]*0x1000000U);
-				fti.compLen		= tmpBuf[ 6] + (tmpBuf[ 7]*0x100) + (tmpBuf[ 8]*0x10000) + (tmpBuf[ 9]*0x1000000);
+				fti.compLen		= tmpBuf[6] + (tmpBuf[7]*0x100) + (tmpBuf[8]*0x10000) + (tmpBuf[9]*0x1000000);
 				fti.deplLen		= tmpBuf[10] + (tmpBuf[11]*0x100) + (tmpBuf[12]*0x10000) + (tmpBuf[13]*0x1000000);
 				fti.dataPos		= tmpBuf[14] + (tmpBuf[15]*0x100) + (tmpBuf[16]*0x10000) + (tmpBuf[17]*0x1000000);
 				tmpBuf = new byte[archNmLen];
@@ -304,6 +325,7 @@ namespace tpIpfTool {
 
 			return 0;
 		}
+
 		class FileTableInf {
 			public string archNm;
 			public string fileNm;
@@ -315,7 +337,7 @@ namespace tpIpfTool {
 			public string filePath;//解凍時は使わない
 		}
 
-		private static void ReadFile(FileStream fs,byte[] buf,int seek,int size){
+		private static void ReadFile(FileStream fs, byte[] buf, int seek, int size) {
 			fs.Seek(seek, SeekOrigin.Begin);
 			int readSize =0;
 			while (size > readSize) {
@@ -338,9 +360,6 @@ namespace tpIpfTool {
 			}
 			Print(sb.ToString());
 		}
-
-
-
 
 
 		HashSet<string> nonCompExtnt = new HashSet<string>();
