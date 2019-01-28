@@ -25,17 +25,38 @@ namespace tpIpfTool {
 			InitializeComponent();
 			DataContext = mdl;
 			Print("Start");
-			String[] args = App.Args;
-			for (int i=0; i<args.Length; i++) {
-				Print("arg["+i+"]:"+args[i]);
-				modeArgs = true;
+            string commandType = null;
+            String[] args = App.Args;
+            int i = 0;
+            foreach(string arg in App.Args) {
+			//for (int i=0; i<args.Length; i++) {
+                if (!string.IsNullOrEmpty(commandType)) {
+                    if (commandType == "name")
+                    {
+                        trgName = arg;
+                        commandType = null;
+                    }
+                    args[i] = null;
+                }
+                else if (arg.StartsWith("--"))
+                {
+                    commandType = arg.TrimStart('-');
+                    args[i] = null;
+                }
+                else
+                {
+				    modeArgs = true;
+				    Print("arg["+i+"]:"+arg);
+                }
+                i++;
 			}
 			if (modeArgs) {
-				Execute(args);
+				Execute(args.Where(n => n != null).ToArray());
 			}
 		
 		}
 		bool modeArgs = false;
+        string trgName = null;
 		private void Window_PreviewDragOver(object sender, DragEventArgs e) {
 			if (e.Data.GetDataPresent(DataFormats.FileDrop, true)) {
 				e.Effects = DragDropEffects.Copy;
@@ -105,7 +126,7 @@ namespace tpIpfTool {
 			if (modePac && modePacIpf) {
 				Task task = new Task(() => {
 					IpfPack ip = new IpfPack(Print);
-					int ret = ip.PacIpf(files, mdl.tgtver, mdl.pkgver);
+					int ret = ip.PacIpf(files, mdl.tgtver, mdl.pkgver, trgName);
 					if (modeArgs && (ret>-1)) {
 						Environment.Exit(0);
 					}
@@ -116,7 +137,7 @@ namespace tpIpfTool {
 			if (modePac && modePacAddon) {
 				Task task = new Task(() => {
 					IpfPack ip = new IpfPack(Print);
-					int ret = ip.PacAddon(files, mdl.tgtver, mdl.pkgver);
+					int ret = ip.PacAddon(files, mdl.tgtver, mdl.pkgver, trgName);
 					if (modeArgs && (ret>-1)) {
 						Environment.Exit(0);
 					}
