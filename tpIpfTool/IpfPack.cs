@@ -134,6 +134,7 @@ namespace tpIpfTool {
 				}
 				ipfFileCnt = lstFileTab.Count;
 				ipfFileTblPos = (int)fw.Position;
+                int lastDataPos = 0;
 				foreach (var fti in lstFileTab) {
 					byte[] archNmB	 = Encoding.UTF8.GetBytes(fti.archNm);
 					byte[] fileNmB	 = Encoding.UTF8.GetBytes(fti.fileNm);
@@ -144,12 +145,13 @@ namespace tpIpfTool {
 					tmpBuf[6] = (byte)(fti.compLen); tmpBuf[7] = (byte)(fti.compLen>>8); tmpBuf[8] = (byte)(fti.compLen>>16); tmpBuf[9] = (byte)(fti.compLen>>24);
 					tmpBuf[10] = (byte)(fti.deplLen); tmpBuf[11] = (byte)(fti.deplLen>>8); tmpBuf[12] = (byte)(fti.deplLen>>16); tmpBuf[13] = (byte)(fti.deplLen>>24);
 					tmpBuf[14] = (byte)(fti.dataPos); tmpBuf[15] = (byte)(fti.dataPos>>8); tmpBuf[16] = (byte)(fti.dataPos>>16); tmpBuf[17] = (byte)(fti.dataPos>>24);
+                    lastDataPos = fti.dataPos;
 
-					fw.Write(tmpBuf, 0, tmpBuf.Length);
+                    fw.Write(tmpBuf, 0, tmpBuf.Length);
 					fw.Write(archNmB, 0, archNmB.Length);
 					fw.Write(fileNmB, 0, fileNmB.Length);
 				}
-				ipfFileFtrPos = (int)fw.Position;
+				ipfFileFtrPos = (int)lastDataPos;
 				{
 					byte[] tmpBuf = new byte[24];
 					tmpBuf[0] = (byte)(ipfFileCnt); tmpBuf[1] = (byte)(ipfFileCnt>>8);
